@@ -161,3 +161,5 @@ maps it to these utilities:
 | `rounded-md` | Buttons, inputs, small cards |
 | `rounded-lg` | Primary cards and panels |
 | `rounded-full` | Avatars, pill badges |
+
+## Another Section
