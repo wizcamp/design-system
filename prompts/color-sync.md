@@ -2,7 +2,7 @@
 
 **Objective:** Extract color variables from a Figma design table, convert them to OKLCH, document them in a Markdown file, and generate a strict Tailwind-compatible `globals.css` file.
 
-**Task Workflow:**
+**Workflow:**
 
 **Step 1: Preparation**
 Use the provided Python script (embedded below) for all color conversions. Do not alter this code under any circumstances.
@@ -30,7 +30,7 @@ Using the Filesystem MCP, create a complete `globals.css` file at `/Users/boblee
 
 ---
 
-## ** RGB TO OKLCH **
+## **RGB TO OKLCH**
 
 ```python
 #!/usr/bin/env python3
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         sys.exit(1)
 ```
 
-## ** BAREBONES globals.css **
+## **BAREBONES globals.css**
 
 ```css
 @import "tailwindcss";
