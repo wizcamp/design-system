@@ -47,10 +47,40 @@ graph TD
     click F "Action: Iterate and apply RGB_to_OKLCH function."
     click I "Action: Format results into GFM table structure."
     click K "Action: Structure CSS, injecting variables and template blocks."
-    ```
+```
 
 # Card vs. Section 
 
 A card is a visually bounded container—typically  styled with borders, backgrounds, or shadows—best used to represent a distinct, portable object, whereas a section relies on open whitespace and typography to group related content within the continuous vertical flow of a page.
 
 https://share.gemini.google/jYnmRkKyaxMI
+
+
+
+/workspaces/workspace/wizcamp-lms/components/settings/about-section.tsx
+
+type IdentitySectionProps = {
+  user: AuthUser | null | undefined;
+  onSignOut: () => void;
+};
+
+export type AuthUser = {
+  studentId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string;
+  oauthProvider: OAuthProvider;
+  role: StudentRole;
+  /** Present only during ephemeral student impersonation. */
+  impersonation?: {
+    adminStudentId: string;
+    adminEmail: string;
+    targetStudentId: string;
+    targetEmail: string;
+  };
+};
+
+Mappings to Primitives
+Avatar gone?
+<>
