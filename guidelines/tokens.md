@@ -22,6 +22,72 @@ Priority order:
 These are the standard shadcn/ui tokens available in every file.
 They resolve automatically for light and dark mode.
 
+### Base Colors
+
+| Variable Name | Light Hex | Light OKLCH | Dark Hex | Dark OKLCH |
+| :--- | :--- | :--- | :--- | :--- |
+| accent | #f59e0b | oklch(0.7686 0.1647 70.0804) | #4e4090 | oklch(0.4291 0.1270 287.8648) |
+| accent-foreground | #000000 | oklch(0 0 0) | #ffffff | oklch(1 0 0) |
+| background | #f7f9f3 | oklch(0.9088 0.0134 44.0897) | #14111f | oklch(0.1886 0.1068 238.4932) |
+| card | #ffffff | oklch(1 0 0) | #3d3070 | oklch(0.3441 0.0728 285.8278) |
+| card-foreground | #2d3029 | oklch(0.3391 0.1377 128.0499) | #eef3e8 | oklch(0.8744 0.0895 237.7888) |
+| chart-1 | #711cff | oklch(0.6328 0.1945 279.0594) | #8740ff | oklch(0.6484 0.1552 277.3513) |
+| chart-2 | #01e7e4 | oklch(0.8906 0.1915 166.5263) | #26ebe9 | oklch(0.7938 0.1357 164.9385) |
+| chart-3 | #014ce4 | oklch(0.5536 0.1213 266.5144) | #2666e9 | oklch(0.5847 0.1207 272.5544) |
+| chart-4 | #aa45ff | oklch(0.6678 0.2447 274.5355) | #711cff | oklch(0.6328 0.1945 279.0594) |
+| chart-5 | #3c0e88 | oklch(0.3691 0.1303 283.8473) | #6318e1 | oklch(0.5471 0.1205 278.8427) |
+| destructive | #e11d48 | None | #fb4d6d | None |
+| destructive-foreground | #fff1f2 | None | #ffe4e8 | None |
+| foreground | #341e63 | oklch(0.3791 0.1751 255.5259) | #eef3e8 | oklch(0.8744 0.0895 237.7888) |
+| input | #737373 | oklch(0.5162 0.0467 220.8294) | #ffffff | oklch(1 0 0) |
+| muted | #f0f0f0 | oklch(0.9431 0.0205 45.4545) | #2e2250 | oklch(0.3441 0.0766 280.4896) |
+| muted-foreground | #6b7269 | oklch(0.5838 0.0608 130.2348) | #b8c4b4 | oklch(0.8205 0.0597 115.0453) |
+| popover | #e5ebe0 | oklch(0.8874 0.0296 84.5391) | #3d3070 | oklch(0.3441 0.0728 285.8278) |
+| popover-foreground | #000000 | oklch(0 0 0) | #ffffff | oklch(1 0 0) |
+| primary | #6318e1 | oklch(0.5471 0.1205 278.8427) | #b588ff | oklch(0.7129 0.1252 259.3395) |
+| primary-foreground | #ffffff | oklch(1 0 0) | #000000 | oklch(0 0 0) |
+| ring | #a5b4fc | oklch(0.7351 0.1895 257.8262) | #818cf8 | oklch(0.6526 0.1534 264.6151) |
+| secondary | #f59e0b | oklch(0.7686 0.1647 70.0804) | #1f0d45 | oklch(0.2761 0.0622 284.8512) |
+| secondary-foreground | #6b7269 | oklch(0.5838 0.0608 130.2348) | #b8c4b4 | oklch(0.8205 0.0597 115.0453) |
+| sidebar | #e1e7d9 | oklch(0.8999 0.0102 82.8098) | #231c3d | oklch(0.3492 0.0782 278.3263) |
+| sidebar-accent | #6b7269 | oklch(0.5838 0.0608 130.2348) | #372d65 | None |
+| sidebar-accent-foreground | #ffffff | oklch(1 0 0) | #eef3e8 | oklch(0.8744 0.0895 237.7888) |
+| sidebar-border | #c8d0c0 | None | #2e244f | None |
+| sidebar-foreground | #2d3029 | oklch(0.3391 0.1377 128.0499) | #eef3e8 | oklch(0.8744 0.0895 237.7888) |
+| sidebar-primary | #6674d6 | oklch(0.5657 0.1416 257.1033) | #96a0ea | oklch(0.7716 0.1687 261.7323) |
+| sidebar-primary-foreground | #ffffff | oklch(1 0 0) | #ffffff | oklch(1 0 0) |
+| sidebar-ring | #96a0ea | oklch(0.7716 0.1687 261.7323) | #6674d6 | oklch(0.5657 0.1416 257.1033) |
+| secondary-foreground | #6b7269 | oklch(0.5838 0.0608 130.2348) | #b8c4b4 | oklch(0.8205 0.0597 115.0453) |
+| chart-1 | #711cff | oklch(0.6328 0.1945 279.0594) | #8740ff | oklch(0.6484 0.1552 277.3513) |
+| chart-2 | #01e7e4 | oklch(0.8906 0.1915 166.5263) | #26ebe9 | oklch(0.7938 0.1357 164.9385) |
+| chart-3 | #014ce4 | oklch(0.5536 0.1213 266.5144) | #2666e9 | oklch(0.5847 0.1207 272.5544) |
+| chart-4 | #aa45ff | oklch(0.6678 0.2447 274.5355) | #711cff | oklch(0.6328 0.1945 279.0594) |
+| chart-5 | #3c0e88 | oklch(0.3691 0.1303 283.8473) | #6318e1 | oklch(0.5471 0.1205 278.8427) |
+
+---
+
+## How to use these tokens
+
+This project layers two token sets:
+
+1. **shadcn/ui semantic tokens** — the default. Use these everywhere a
+   shadcn equivalent exists. They handle light/dark mode automatically.
+2. **Wizcamp custom tokens** — additive. Use only when no shadcn semantic
+   token covers the intent. Registered in `globals.css` via `@theme inline`
+   so they resolve to clean Tailwind utility classes.
+
+Priority order:
+1. shadcn/ui semantic class (`bg-card`, `text-muted-foreground`)
+2. Wizcamp custom class (`bg-surface-canvas`, `bg-action-green`)
+3. Nothing else — never arbitrary `bg-[var(--token)]`, never hardcoded hex
+
+---
+
+## shadcn/ui semantic tokens
+
+These are the standard shadcn/ui tokens available in every file.
+They resolve automatically for light and dark mode.
+
 ### Backgrounds
 
 | Tailwind utility | CSS variable | Light value | Use for |
@@ -161,5 +227,3 @@ maps it to these utilities:
 | `rounded-md` | Buttons, inputs, small cards |
 | `rounded-lg` | Primary cards and panels |
 | `rounded-full` | Avatars, pill badges |
-
-## Another Section

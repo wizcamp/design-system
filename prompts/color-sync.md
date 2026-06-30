@@ -95,7 +95,7 @@ if __name__ == "__main__":
 ```css
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: oklch(0.9892 0.0054 117.9205);
