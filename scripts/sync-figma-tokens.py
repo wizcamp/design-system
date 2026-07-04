@@ -32,11 +32,13 @@ BASE_COLORS_NODE_ID = "21275-9"
 # File paths relative to script location
 SCRIPT_DIR = Path(__file__).parent
 REPO_ROOT = SCRIPT_DIR.parent
+MONOREPO_ROOT = REPO_ROOT.parent.parent
 
 load_dotenv(REPO_ROOT / ".env.local")
 
 TOKENS_MD_PATH = REPO_ROOT / "guidelines" / "tokens.md"
-GLOBALS_CSS_PATH = REPO_ROOT / "styles" / "globals.css"
+#GLOBALS_CSS_PATH = REPO_ROOT / "styles" / "globals.css"
+GLOBALS_CSS_PATH = MONOREPO_ROOT / "wizcamp-lms" / "app" / "globals.css"
 
 # API Configuration
 FIGMA_API_BASE = "https://api.figma.com/v1"
