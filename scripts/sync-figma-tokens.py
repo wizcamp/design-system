@@ -20,6 +20,7 @@ import math
 import requests
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
+from dotenv import load_dotenv
 
 # ==========================================
 # CONFIGURATION
@@ -31,6 +32,8 @@ BASE_COLORS_NODE_ID = "21275-9"
 # File paths relative to script location
 SCRIPT_DIR = Path(__file__).parent
 REPO_ROOT = SCRIPT_DIR.parent
+
+load_dotenv(REPO_ROOT / ".env.local")
 
 TOKENS_MD_PATH = REPO_ROOT / "guidelines" / "tokens.md"
 GLOBALS_CSS_PATH = REPO_ROOT / "styles" / "globals.css"
@@ -150,7 +153,8 @@ def extract_figma_tokens(api_token: str) -> List[Dict[str, any]]:
     response.raise_for_status()
     
     data = response.json()
-    table_node = data['nodes'][BASE_COLORS_NODE_ID]['document']
+    node_key = BASE_COLORS_NODE_ID.replace('-', ':')
+    table_node = data['nodes'][node_key]['document']
     
     results = []
     

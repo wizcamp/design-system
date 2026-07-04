@@ -26,43 +26,38 @@ They resolve automatically for light and dark mode.
 
 | Variable Name | Light Hex | Light OKLCH | Dark Hex | Dark OKLCH |
 | :--- | :--- | :--- | :--- | :--- |
-| accent | #f59e0b | oklch(0.7686 0.1647 70.0804) | #4e4090 | oklch(0.4291 0.1270 287.8648) |
-| accent-foreground | #000000 | oklch(0 0 0) | #ffffff | oklch(1 0 0) |
-| background | #f7f9f3 | oklch(0.9088 0.0134 44.0897) | #14111f | oklch(0.1886 0.1068 238.4932) |
-| card | #ffffff | oklch(1 0 0) | #3d3070 | oklch(0.3441 0.0728 285.8278) |
-| card-foreground | #2d3029 | oklch(0.3391 0.1377 128.0499) | #eef3e8 | oklch(0.8744 0.0895 237.7888) |
-| chart-1 | #711cff | oklch(0.6328 0.1945 279.0594) | #8740ff | oklch(0.6484 0.1552 277.3513) |
-| chart-2 | #01e7e4 | oklch(0.8906 0.1915 166.5263) | #26ebe9 | oklch(0.7938 0.1357 164.9385) |
-| chart-3 | #014ce4 | oklch(0.5536 0.1213 266.5144) | #2666e9 | oklch(0.5847 0.1207 272.5544) |
-| chart-4 | #aa45ff | oklch(0.6678 0.2447 274.5355) | #711cff | oklch(0.6328 0.1945 279.0594) |
-| chart-5 | #3c0e88 | oklch(0.3691 0.1303 283.8473) | #6318e1 | oklch(0.5471 0.1205 278.8427) |
-| destructive | #e11d48 | None | #fb4d6d | None |
-| destructive-foreground | #fff1f2 | None | #ffe4e8 | None |
-| foreground | #341e63 | oklch(0.3791 0.1751 255.5259) | #eef3e8 | oklch(0.8744 0.0895 237.7888) |
-| input | #737373 | oklch(0.5162 0.0467 220.8294) | #ffffff | oklch(1 0 0) |
-| muted | #f0f0f0 | oklch(0.9431 0.0205 45.4545) | #2e2250 | oklch(0.3441 0.0766 280.4896) |
-| muted-foreground | #6b7269 | oklch(0.5838 0.0608 130.2348) | #b8c4b4 | oklch(0.8205 0.0597 115.0453) |
-| popover | #e5ebe0 | oklch(0.8874 0.0296 84.5391) | #3d3070 | oklch(0.3441 0.0728 285.8278) |
-| popover-foreground | #000000 | oklch(0 0 0) | #ffffff | oklch(1 0 0) |
-| primary | #6318e1 | oklch(0.5471 0.1205 278.8427) | #b588ff | oklch(0.7129 0.1252 259.3395) |
-| primary-foreground | #ffffff | oklch(1 0 0) | #000000 | oklch(0 0 0) |
-| ring | #a5b4fc | oklch(0.7351 0.1895 257.8262) | #818cf8 | oklch(0.6526 0.1534 264.6151) |
-| secondary | #f59e0b | oklch(0.7686 0.1647 70.0804) | #1f0d45 | oklch(0.2761 0.0622 284.8512) |
-| secondary-foreground | #6b7269 | oklch(0.5838 0.0608 130.2348) | #b8c4b4 | oklch(0.8205 0.0597 115.0453) |
-| sidebar | #e1e7d9 | oklch(0.8999 0.0102 82.8098) | #231c3d | oklch(0.3492 0.0782 278.3263) |
-| sidebar-accent | #6b7269 | oklch(0.5838 0.0608 130.2348) | #372d65 | None |
-| sidebar-accent-foreground | #ffffff | oklch(1 0 0) | #eef3e8 | oklch(0.8744 0.0895 237.7888) |
-| sidebar-border | #c8d0c0 | None | #2e244f | None |
-| sidebar-foreground | #2d3029 | oklch(0.3391 0.1377 128.0499) | #eef3e8 | oklch(0.8744 0.0895 237.7888) |
-| sidebar-primary | #6674d6 | oklch(0.5657 0.1416 257.1033) | #96a0ea | oklch(0.7716 0.1687 261.7323) |
-| sidebar-primary-foreground | #ffffff | oklch(1 0 0) | #ffffff | oklch(1 0 0) |
-| sidebar-ring | #96a0ea | oklch(0.7716 0.1687 261.7323) | #6674d6 | oklch(0.5657 0.1416 257.1033) |
-| secondary-foreground | #6b7269 | oklch(0.5838 0.0608 130.2348) | #b8c4b4 | oklch(0.8205 0.0597 115.0453) |
-| chart-1 | #711cff | oklch(0.6328 0.1945 279.0594) | #8740ff | oklch(0.6484 0.1552 277.3513) |
-| chart-2 | #01e7e4 | oklch(0.8906 0.1915 166.5263) | #26ebe9 | oklch(0.7938 0.1357 164.9385) |
-| chart-3 | #014ce4 | oklch(0.5536 0.1213 266.5144) | #2666e9 | oklch(0.5847 0.1207 272.5544) |
-| chart-4 | #aa45ff | oklch(0.6678 0.2447 274.5355) | #711cff | oklch(0.6328 0.1945 279.0594) |
-| chart-5 | #3c0e88 | oklch(0.3691 0.1303 283.8473) | #6318e1 | oklch(0.5471 0.1205 278.8427) |
+| accent | #711cff | oklch(0.5239 0.2850 288.3272) | #4e4090 | oklch(0.4291 0.1270 287.8648) |
+| accent-foreground | #000000 | oklch(0 0 0) | #ffffff | oklch(1.0000 0 0) |
+| background | #f7f9f3 | oklch(0.9789 0.0082 121.6273) | #14111f | oklch(0.1887 0.0283 293.3346) |
+| border | #2d3029 | oklch(0.3037 0.0130 126.1273) | #dce4d2 | oklch(0.9078 0.0256 126.5689) |
+| card | #ffffff | oklch(1.0000 0 0) | #3d3070 | oklch(0.3592 0.1063 289.2818) |
+| card-foreground | #2d3029 | oklch(0.3037 0.0130 126.1273) | #eef3e8 | oklch(0.9573 0.0155 126.8214) |
+| chart-1 | #711cff | oklch(0.5239 0.2850 288.3272) | #8740ff | oklch(0.5741 0.2599 293.3024) |
+| chart-2 | #01e7e4 | oklch(0.8392 0.1436 193.0922) | #26ebe9 | oklch(0.8528 0.1410 193.7031) |
+| chart-3 | #014ce4 | oklch(0.4916 0.2375 262.6080) | #2666e9 | oklch(0.5506 0.2090 262.3216) |
+| chart-4 | #aa45ff | oklch(0.6172 0.2593 304.4246) | #711cff | oklch(0.5239 0.2850 288.3272) |
+| chart-5 | #3c0e88 | oklch(0.3349 0.1759 289.8483) | #6318e1 | oklch(0.4771 0.2590 288.3583) |
+| destructive | #e11d48 | oklch(0.5858 0.2220 17.5846) | #fb4d6d | oklch(0.6721 0.2093 14.3131) |
+| destructive-foreground | #fff1f2 | oklch(0.9694 0.0152 12.4217) | #ffe4e8 | oklch(0.9419 0.0301 7.5182) |
+| foreground | #341e63 | oklch(0.3070 0.1154 293.0169) | #eef3e8 | oklch(0.9573 0.0155 126.8214) |
+| input | #737373 | oklch(0.5555 0 0) | #ffffff | oklch(1.0000 0 0) |
+| muted | #f0f0f0 | oklch(0.9551 0 0) | #2e2250 | oklch(0.2921 0.0811 292.6961) |
+| muted-foreground | #6b7269 | oklch(0.5433 0.0161 138.7230) | #b8c4b4 | oklch(0.8065 0.0257 137.8181) |
+| popover | #e5ebe0 | oklch(0.9325 0.0160 130.4249) | #3d3070 | oklch(0.3592 0.1063 289.2818) |
+| popover-foreground | #000000 | oklch(0 0 0) | #ffffff | oklch(1.0000 0 0) |
+| primary | #6318e1 | oklch(0.4771 0.2590 288.3583) | #b588ff | oklch(0.7192 0.1717 299.5252) |
+| primary-foreground | #ffffff | oklch(1.0000 0 0) | #000000 | oklch(0 0 0) |
+| ring | #a5b4fc | oklch(0.7853 0.1041 274.7134) | #818cf8 | oklch(0.6801 0.1583 276.9349) |
+| secondary | #f59e0b | oklch(0.7686 0.1647 70.0804) | #1f0d45 | oklch(0.2271 0.0977 291.2928) |
+| secondary-foreground | #6b7269 | oklch(0.5433 0.0161 138.7230) | #b8c4b4 | oklch(0.8065 0.0257 137.8181) |
+| sidebar | #e1e7d9 | oklch(0.9195 0.0198 125.8334) | #231c3d | oklch(0.2532 0.0608 291.1828) |
+| sidebar-accent | #6b7269 | oklch(0.5433 0.0161 138.7230) | #372d65 | oklch(0.3392 0.0948 288.5050) |
+| sidebar-accent-foreground | #ffffff | oklch(1.0000 0 0) | #eef3e8 | oklch(0.9573 0.0155 126.8214) |
+| sidebar-border | #c8d0c0 | oklch(0.8469 0.0235 128.7729) | #2e244f | oklch(0.2955 0.0760 291.7821) |
+| sidebar-foreground | #2d3029 | oklch(0.3037 0.0130 126.1273) | #ffffff | oklch(1.0000 0 0) |
+| sidebar-primary | #6674d6 | oklch(0.5948 0.1490 274.8277) | #96a0ea | oklch(0.7267 0.1080 277.4551) |
+| sidebar-primary-foreground | #ffffff | oklch(1.0000 0 0) | #ffffff | oklch(1.0000 0 0) |
+| sidebar-ring | #96a0ea | oklch(0.7267 0.1080 277.4551) | #6674d6 | oklch(0.5948 0.1490 274.8277) |
 
 ---
 
