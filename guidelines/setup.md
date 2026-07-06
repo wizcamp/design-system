@@ -32,10 +32,3 @@ Always import icons like this:
 ```tsx
 import { IconLogout, IconBrandGithub } from '@tabler/icons-react'
 ```
-
-Never use inline SVGs. Never import from `lucide-react`.
-
-## Token usage
-
-All color, spacing, and radius tokens are documented in `tokens.md`.
-Read that file before applying any visual styling.
