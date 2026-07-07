@@ -4,9 +4,9 @@ The content area wrapper rendered as the second child of every admin page. Owns 
 
 ## Structure
 
-`<main className="p-4 sm:p-6 {className}">`
+`<div className="p-4 sm:p-6 {className}">`
 
-- Single `<main>` element — the only `<main>` in the admin layout tree (`SidebarInset` is a `<div>`)
+- `SidebarInset` in `AdminLayout` renders a `<main>` element — `AdminPageContent` uses a `<div>` to avoid nesting a second `<main>`
 - `className` is merged via `cn()` — page-specific layout classes (`space-y-6`, `flex`, `grid`, `max-w-2xl`) go here, not on a child div
 
 ## Props
