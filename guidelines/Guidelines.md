@@ -15,19 +15,20 @@ Wizcamp is an edtech platform for teenagers (ages 13–17) learning to code.
 **MUST READ before writing any code:**
 1. This file (`Guidelines.md`) — product character, rules, and workflows
 2. `setup.md` — tech stack, dependencies, and configuration
-3. `foundations/` — colors, fonts, typography, and utility class reference
+3. `foundations/` — colors, fonts, typography, utility class reference, and prose system
 
 **Read on-demand:**
 - `composition/` — read when building page layouts or combining components
-- `components/{name}.md` — read BEFORE using that component
+- `components/{name}.md` or `components/{name}/` — read BEFORE using that component or subsystem
 
 ## Workflows
 
 ### Before using a component
 1. Check `components/catalog.md` for the component catalog
-2. Read `components/{name}.md` for the specific component
-3. Follow all rules, valid props, and usage notes in that file
-4. Do NOT write code using a component until you have read its guidelines file
+2. For standalone components: read `components/{name}.md`
+3. For subsystems: read `components/{name}/index.md` first, then the file for the specific component
+4. Follow all rules, valid props, and usage notes in that file
+5. Do NOT write code using a component until you have read its guidelines file
 
 ### Before using an icon
 1. Check `icon-discovery.md` for available icons
@@ -36,9 +37,8 @@ Wizcamp is an edtech platform for teenagers (ages 13–17) learning to code.
 
 ### When building a layout
 1. Read `composition/layouts.md` for page structure patterns
-2. Read `composition/surfaces.md` for layering and background token rules
+2. Read `composition/surfaces.md` for layering and background class rules
 3. Use Tailwind spacing utilities — never hardcode pixel values
-4. Consult `foundations/tokens.md` for the correct background class at each layer
 
 ## Hard rules
 
