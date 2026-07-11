@@ -5,7 +5,18 @@ Custom Spacing Sync Pipeline
 Extracts semantic spacing tokens from two Figma design system tables (Desktop
 and Mobile), merges them into a unified token set, and updates:
   - guidelines/foundations/custom-spacing.md
-  - wizcamp-lms/app/globals.css  (@utility blocks)
+  - wizcamp-lms/app/globals.css  (:root CSS custom properties + @utility blocks)
+
+The pipeline writes two sentinel-bracketed blocks into globals.css:
+
+  1. /* ─── Custom spacing tokens  …  /* end custom spacing tokens */
+     A :root block declaring --token-name CSS custom properties.
+     Mobile-first: base values are mobile, @media (width >= 40rem) overrides
+     to desktop values when they differ. Aligns with Tailwind v4's sm breakpoint.
+
+  2. /* ─── Custom spacing utilities  …  /* end custom spacing utilities */
+     One-liner @utility blocks — each applies a single CSS property via var().
+     No media queries here; all responsive logic lives in the :root block.
 
 Usage:
     python scripts/sync-spacing.py
@@ -41,9 +52,11 @@ GLOBALS_CSS_PATH = MONOREPO_ROOT / "wizcamp-lms" / "app" / "globals.css"
 
 FIGMA_API_BASE = "https://api.figma.com/v1"
 
-# Sentinels that bracket the @utility block in globals.css.
+# Sentinel pairs that bracket each generated block in globals.css.
+_TOKEN_BLOCK_START   = "/* ─── Custom spacing tokens"
+_TOKEN_BLOCK_END     = "/* end custom spacing tokens */"
 _UTILITY_BLOCK_START = "/* ─── Custom spacing utilities"
-_UTILITY_BLOCK_END_MARKER = "/* end custom spacing utilities */"
+_UTILITY_BLOCK_END   = "/* end custom spacing utilities */"
 
 # ==========================================
 # HELPERS (copied from sync-fonts.py — keep in sync)
@@ -56,8 +69,6 @@ def walk_tree(node: Dict):
         yield from walk_tree(child)
 
 
-
-
 # ==========================================
 # TRANSFORM HELPERS
 # ==========================================
@@ -65,7 +76,6 @@ def walk_tree(node: Dict):
 def px_to_rem(px: int) -> str:
     """Convert integer pixel value to rem string (base 16px)."""
     rem = px / 16
-    # Format: drop trailing zeros but keep up to 4 decimal places
     formatted = f"{rem:.4f}".rstrip("0").rstrip(".")
     return f"{formatted}rem"
 
@@ -78,7 +88,7 @@ def extract_table(api_token: str, node_id: str, label: str) -> Dict[str, int]:
     """
     Extract token name → pixel value pairs from a Figma spacing table node.
 
-    Returns a dict keyed by the raw Figma token name (before suffix stripping).
+    Returns a dict keyed by the raw Figma token name.
     """
     url = f"{FIGMA_API_BASE}/files/{FIGMA_FILE_ID}/nodes?ids={node_id}"
     headers = {"X-Figma-Token": api_token}
@@ -111,14 +121,12 @@ def extract_table(api_token: str, node_id: str, label: str) -> Dict[str, int]:
         if len(cells) < 2:
             continue
 
-        # Column 1: token name (TEXT node)
         token_name: Optional[str] = None
         for node in walk_tree(cells[0]):
             if node.get("type") == "TEXT":
                 token_name = node.get("characters", "").strip()
                 break
 
-        # Column 2: pixel value as string (TEXT node)
         px_text: Optional[str] = None
         for node in walk_tree(cells[1]):
             if node.get("type") == "TEXT":
@@ -144,31 +152,34 @@ def extract_table(api_token: str, node_id: str, label: str) -> Dict[str, int]:
 
 def extract_figma_spacing(api_token: str):
     desktop = extract_table(api_token, DESKTOP_NODE_ID, "Desktop")
-    mobile = extract_table(api_token, MOBILE_NODE_ID, "Mobile")
+    mobile  = extract_table(api_token, MOBILE_NODE_ID,  "Mobile")
     return desktop, mobile
+
 
 # ==========================================
 # PHASE 2: TRANSFORM
 # ==========================================
 
-def resolve_property(name: str) -> Optional[tuple[str, str, str]]:
+def resolve_property(name: str) -> Optional[tuple[str, str]]:
     """
-    Derive (utility_name, css_property, utility_example) from a token base name.
+    Derive (css_property, css_var_name) from a Figma token name.
 
-    Rules are evaluated in order; first match wins.
-    Returns None if no rule matches — caller should skip with a warning.
+    Rules evaluated in order; first match wins.
+    css_var_name mirrors the token name exactly: --container-padding-x,
+    --section-padding-y, --section-title-gap-md, etc.
+    Returns None if no rule matches — caller skips with a warning.
 
-    Naming convention:
-      - padding-inline tokens end with -x  → utility name keeps -x suffix
-      - padding-block tokens end with -y   → utility name keeps -y suffix
-      - gap tokens contain 'gap' or 'title' → utility name is the base name, property is gap
+    Convention:
+      - tokens ending in -x  → padding-inline
+      - tokens ending in -y  → padding-block
+      - tokens containing 'gap' or 'title' → gap
     """
     if name.endswith("-x"):
-        return name, "padding-inline", name
+        return "padding-inline", f"--{name}"
     if name.endswith("-y"):
-        return name, "padding-block", name
+        return "padding-block", f"--{name}"
     if "title" in name or "gap" in name:
-        return name, "gap", name
+        return "gap", f"--{name}"
     return None
 
 
@@ -176,48 +187,44 @@ def build_tokens(desktop: Dict[str, int], mobile: Dict[str, int]) -> List[Dict]:
     """
     Merge Desktop and Mobile tables into a unified token list.
 
-    - Deduplicate: first encountered wins (Desktop table order is authoritative).
-    - Each token resolves its utility name and css_property via resolve_property.
-      Unknown tokens are skipped with a warning.
+    Desktop table order is authoritative. Tokens not matched by resolve_property
+    are skipped with a warning.
     """
     print("🔄 Building unified token list...")
 
     seen: Dict[str, bool] = {}
     tokens: List[Dict] = []
 
-    for raw_name, desktop_px in desktop.items():
-        base_name = raw_name
-
-        if base_name in seen:
-            print(f"  ⚠️  Duplicate token: '{base_name}' (skipped)")
+    for token_name, desktop_px in desktop.items():
+        if token_name in seen:
+            print(f"  ⚠️  Duplicate token: '{token_name}' (skipped)")
             continue
-        seen[base_name] = True
+        seen[token_name] = True
 
-        resolved = resolve_property(base_name)
+        resolved = resolve_property(token_name)
         if not resolved:
-            print(f"  ⚠️  Unknown token '{base_name}' — no matching rule in resolve_property, skipped")
+            print(f"  ⚠️  Unknown token '{token_name}' — no matching rule in resolve_property, skipped")
             continue
 
-        utility_name, css_property, utility_example = resolved
-
-        mobile_px = mobile.get(raw_name)
+        css_property, css_var = resolved
+        mobile_px = mobile.get(token_name)
 
         tokens.append({
-            "raw_name": raw_name,
-            "base_name": base_name,
-            "css_name": utility_name,
-            "css_property": css_property,
-            "utility_example": utility_example,
-            "desktop_px": desktop_px,
-            "desktop_rem": px_to_rem(desktop_px),
-            "mobile_px": mobile_px,
-            "mobile_rem": px_to_rem(mobile_px) if mobile_px is not None else None,
+            "token_name":   token_name,
+            "css_var":      css_var,        # e.g. --container-padding-x
+            "css_property": css_property,   # e.g. padding-inline
+            "desktop_px":   desktop_px,
+            "desktop_rem":  px_to_rem(desktop_px),
+            "mobile_px":    mobile_px,
+            "mobile_rem":   px_to_rem(mobile_px) if mobile_px is not None else None,
         })
+
         mobile_display = f"{mobile_px}px → {px_to_rem(mobile_px)}" if mobile_px is not None else "—"
-        print(f"  ✓ {base_name}: desktop={desktop_px}px → {px_to_rem(desktop_px)}, mobile={mobile_display}")
+        print(f"  ✓ {token_name}: desktop={desktop_px}px → {px_to_rem(desktop_px)}, mobile={mobile_display}")
 
     print(f"✅ Built {len(tokens)} unified tokens")
     return tokens
+
 
 # ==========================================
 # PHASE 3: WRITE custom-spacing.md
@@ -242,7 +249,7 @@ def write_spacing_md(tokens: List[Dict]) -> None:
             else "—"
         )
         lines.append(
-            f"| `{t['css_name']}` "
+            f"| `{t['token_name']}` "
             f"| {t['desktop_px']}px → {t['desktop_rem']} "
             f"| {mobile_col} |"
         )
@@ -256,32 +263,55 @@ def write_spacing_md(tokens: List[Dict]) -> None:
 # PHASE 4: UPDATE globals.css
 # ==========================================
 
-def _build_utility_block(tokens: List[Dict]) -> str:
+def _build_token_block(tokens: List[Dict]) -> str:
     """
-    Render @utility blocks for all tokens.
+    Render the :root block declaring CSS custom properties.
 
-    Each utility embeds a @media (max-width: 639px) override when the mobile
-    value differs from desktop. The utility name is the token's css_name so
-    Tailwind resolves e.g. `gap-section-title-xl`, `px-container-padding`, etc.
+    Mobile-first: base value is the mobile rem (or desktop if no mobile override).
+    @media (width >= 40rem) applies the desktop value when it differs.
+    Aligns with Tailwind v4's sm breakpoint (40rem = 640px at default font size).
     """
     lines = [
-        "/* ─── Custom spacing utilities ───────────────────────────────────────────────────",
+        "/* ─── Custom spacing tokens ─────────────────────────────────────────────────────",
         "   Auto-generated by sync-spacing.py. Do not edit manually.",
-        "   Each @utility embeds its own mobile override so the responsive behaviour",
-        "   is self-contained. Threshold matches Tailwind's `sm` breakpoint (640px). */",
+        "   Mobile-first CSS custom properties. @media (width >= 40rem) = Tailwind sm. */",
+        ":root {",
+    ]
+
+    # Base values (mobile-first: use mobile_rem when available, else desktop_rem)
+    for t in tokens:
+        base = t["mobile_rem"] if t["mobile_rem"] is not None else t["desktop_rem"]
+        lines.append(f"  {t['css_var']}: {base};")
+
+    # Desktop overrides — only emit the @media block if any token actually differs
+    overrides = [t for t in tokens if t["mobile_rem"] is not None and t["mobile_rem"] != t["desktop_rem"]]
+    if overrides:
+        lines.append("  @media (width >= 40rem) {")
+        for t in overrides:
+            lines.append(f"    {t['css_var']}: {t['desktop_rem']};")
+        lines.append("  }")
+
+    lines.append("}")
+    lines.append(_TOKEN_BLOCK_END)
+    return "\n".join(lines)
+
+
+def _build_utility_block(tokens: List[Dict]) -> str:
+    """
+    Render one-liner @utility blocks — each applies a single CSS property via var().
+    No media queries; all responsive logic lives in the :root token block above.
+    """
+    lines = [
+        "/* ─── Custom spacing utilities ─────────────────────────────────────────────────",
+        "   Auto-generated by sync-spacing.py. Do not edit manually.",
+        "   Each utility is a single-line var() reference — responsive behaviour",
+        "   is handled entirely by the CSS custom properties in the token block above. */",
     ]
 
     for t in tokens:
-        prop = t["css_property"]
-        lines.append(f"@utility {t['css_name']} {{")
-        lines.append(f"  {prop}: {t['desktop_rem']};")
-        if t["mobile_rem"] is not None and t["mobile_rem"] != t["desktop_rem"]:
-            lines.append("  @media (max-width: 639px) {")
-            lines.append(f"    {prop}: {t['mobile_rem']};")
-            lines.append("  }")
-        lines.append("}")
+        lines.append(f"@utility {t['token_name']} {{ {t['css_property']}: var({t['css_var']}); }}")
 
-    lines.append(_UTILITY_BLOCK_END_MARKER)
+    lines.append(_UTILITY_BLOCK_END)
     return "\n".join(lines)
 
 
@@ -294,29 +324,45 @@ def update_globals_css(tokens: List[Dict]) -> None:
 
     content = GLOBALS_CSS_PATH.read_text()
 
-    new_block = _build_utility_block(tokens)
+    new_token_block   = _build_token_block(tokens)
+    new_utility_block = _build_utility_block(tokens)
 
-    # Replace existing block (between sentinel and end marker), or insert after @theme inline.
-    existing_pattern = re.compile(
-        r"/\* ─── Custom spacing utilities.*?" + re.escape(_UTILITY_BLOCK_END_MARKER),
+    token_pattern = re.compile(
+        r"/\* ─── Custom spacing tokens.*?" + re.escape(_TOKEN_BLOCK_END),
+        re.DOTALL,
+    )
+    utility_pattern = re.compile(
+        r"/\* ─── Custom spacing utilities.*?" + re.escape(_UTILITY_BLOCK_END),
         re.DOTALL,
     )
 
-    if existing_pattern.search(content):
-        content = existing_pattern.sub(new_block, content)
+    if token_pattern.search(content):
+        content = token_pattern.sub(new_token_block, content)
     else:
-        # First run: insert after the closing brace of @theme inline
+        # First run: insert both blocks after the closing brace of @theme inline.
+        # The utility block follows immediately after the token block.
         content = re.sub(
             r"(^@theme\s+inline\s*\{.*?^\})",
-            lambda m: m.group(0) + "\n\n" + new_block,
+            lambda m: m.group(0) + "\n\n" + new_token_block + "\n\n" + new_utility_block,
             content,
             count=1,
             flags=re.MULTILINE | re.DOTALL,
         )
+        GLOBALS_CSS_PATH.write_text(content)
+        override_count = len([t for t in tokens if t["mobile_rem"] is not None and t["mobile_rem"] != t["desktop_rem"]])
+        print(f"✅ Inserted globals.css ({len(tokens)} tokens, {override_count} with sm overrides)")
+        return
+
+    if utility_pattern.search(content):
+        content = utility_pattern.sub(new_utility_block, content)
+    else:
+        # Token block existed but utility block is missing — append after token block.
+        content = token_pattern.sub(new_token_block + "\n\n" + new_utility_block, content)
 
     GLOBALS_CSS_PATH.write_text(content)
-    mobile_count = len([t for t in tokens if t["mobile_rem"] is not None and t["mobile_rem"] != t["desktop_rem"]])
-    print(f"✅ Updated globals.css ({len(tokens)} @utility blocks, {mobile_count} with mobile overrides)")
+    override_count = len([t for t in tokens if t["mobile_rem"] is not None and t["mobile_rem"] != t["desktop_rem"]])
+    print(f"✅ Updated globals.css ({len(tokens)} tokens, {override_count} with sm overrides)")
+
 
 # ==========================================
 # MAIN
