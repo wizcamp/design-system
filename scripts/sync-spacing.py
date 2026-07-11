@@ -41,9 +41,6 @@ GLOBALS_CSS_PATH = MONOREPO_ROOT / "wizcamp-lms" / "app" / "globals.css"
 
 FIGMA_API_BASE = "https://api.figma.com/v1"
 
-# Suffixes stripped before token registration — axis is applied at the utility level.
-STRIP_SUFFIXES = ["-x", "-y"]
-
 # Sentinels that bracket the @utility block in globals.css.
 _UTILITY_BLOCK_START = "/* ─── Custom spacing utilities"
 _UTILITY_BLOCK_END_MARKER = "/* end custom spacing utilities */"
@@ -72,13 +69,6 @@ def px_to_rem(px: int) -> str:
     formatted = f"{rem:.4f}".rstrip("0").rstrip(".")
     return f"{formatted}rem"
 
-
-def strip_axis_suffix(name: str) -> str:
-    """Strip -x or -y axis suffixes from a token name."""
-    for suffix in STRIP_SUFFIXES:
-        if name.endswith(suffix):
-            return name[: -len(suffix)]
-    return name
 
 # ==========================================
 # PHASE 1: EXTRACT FROM FIGMA
@@ -161,29 +151,33 @@ def extract_figma_spacing(api_token: str):
 # PHASE 2: TRANSFORM
 # ==========================================
 
-# Maps raw Figma token base names to their CSS property and utility example.
-# The utility example is the most common usage shown in docs.
-# Tokens not listed here fall back to the generic `spacing-{name}` css_name
-# with no css_property (they will be skipped with a warning).
-TOKEN_MAP = {
-    "container-padding": {"css_name": "container-padding", "css_property": "padding-inline", "utility_example": "px-container-padding"},
-    "section-padding":   {"css_name": "section-padding",   "css_property": "padding-block",  "utility_example": "py-section-padding"},
-    "section-title-sm":  {"css_name": "section-title-sm",  "css_property": "gap",             "utility_example": "gap-section-title-sm"},
-    "section-title-md":  {"css_name": "section-title-md",  "css_property": "gap",             "utility_example": "gap-section-title-md"},
-    "section-title-lg":  {"css_name": "section-title-lg",  "css_property": "gap",             "utility_example": "gap-section-title-lg"},
-    "section-title-xl":  {"css_name": "section-title-xl",  "css_property": "gap",             "utility_example": "gap-section-title-xl"},
-}
+def resolve_property(name: str) -> Optional[tuple[str, str, str]]:
+    """
+    Derive (utility_name, css_property, utility_example) from a token base name.
+
+    Rules are evaluated in order; first match wins.
+    Returns None if no rule matches — caller should skip with a warning.
+
+    Naming convention:
+      - padding-inline tokens end with -x  → utility name keeps -x suffix
+      - padding-block tokens end with -y   → utility name keeps -y suffix
+      - gap tokens contain 'gap' or 'title' → utility name is the base name, property is gap
+    """
+    if name.endswith("-x"):
+        return name, "padding-inline", name
+    if name.endswith("-y"):
+        return name, "padding-block", name
+    if "title" in name or "gap" in name:
+        return name, "gap", name
+    return None
 
 
 def build_tokens(desktop: Dict[str, int], mobile: Dict[str, int]) -> List[Dict]:
     """
     Merge Desktop and Mobile tables into a unified token list.
 
-    - Strip -x / -y axis suffixes from token names.
-    - Rename section-title-gap-* → section-title-* (gap dropped; prefix carries meaning).
-    - Deduplicate: if two raw names collapse to the same base name, the first
-      encountered wins (Desktop table order is authoritative).
-    - Each token resolves its css_name and css_property from TOKEN_MAP.
+    - Deduplicate: first encountered wins (Desktop table order is authoritative).
+    - Each token resolves its utility name and css_property via resolve_property.
       Unknown tokens are skipped with a warning.
     """
     print("🔄 Building unified token list...")
@@ -192,29 +186,28 @@ def build_tokens(desktop: Dict[str, int], mobile: Dict[str, int]) -> List[Dict]:
     tokens: List[Dict] = []
 
     for raw_name, desktop_px in desktop.items():
-        base_name = strip_axis_suffix(raw_name)
-
-        # Rename section-title-gap-* → section-title-*
-        base_name = re.sub(r"^section-title-gap-", "section-title-", base_name)
+        base_name = raw_name
 
         if base_name in seen:
-            print(f"  ⚠️  Duplicate after suffix strip: '{raw_name}' → '{base_name}' (skipped)")
+            print(f"  ⚠️  Duplicate token: '{base_name}' (skipped)")
             continue
         seen[base_name] = True
 
-        mapping = TOKEN_MAP.get(base_name)
-        if not mapping:
-            print(f"  ⚠️  Unknown token '{base_name}' — not in TOKEN_MAP, skipped")
+        resolved = resolve_property(base_name)
+        if not resolved:
+            print(f"  ⚠️  Unknown token '{base_name}' — no matching rule in resolve_property, skipped")
             continue
+
+        utility_name, css_property, utility_example = resolved
 
         mobile_px = mobile.get(raw_name)
 
         tokens.append({
             "raw_name": raw_name,
             "base_name": base_name,
-            "css_name": mapping["css_name"],
-            "css_property": mapping["css_property"],
-            "utility_example": mapping["utility_example"],
+            "css_name": utility_name,
+            "css_property": css_property,
+            "utility_example": utility_example,
             "desktop_px": desktop_px,
             "desktop_rem": px_to_rem(desktop_px),
             "mobile_px": mobile_px,
@@ -238,8 +231,8 @@ def write_spacing_md(tokens: List[Dict]) -> None:
         "",
         "Auto-generated by `sync-spacing.py`. Do not edit manually.",
         "",
-        "| Token | Utility class | Desktop (px → rem) | Mobile (px → rem) |",
-        "| :--- | :--- | :--- | :--- |",
+        "| Class | Desktop (px → rem) | Mobile (px → rem) |",
+        "| :--- | :--- | :--- |",
     ]
 
     for t in tokens:
@@ -249,7 +242,7 @@ def write_spacing_md(tokens: List[Dict]) -> None:
             else "—"
         )
         lines.append(
-            f"| `{t['base_name']}` | `{t['utility_example']}` "
+            f"| `{t['css_name']}` "
             f"| {t['desktop_px']}px → {t['desktop_rem']} "
             f"| {mobile_col} |"
         )
