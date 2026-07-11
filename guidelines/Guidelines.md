@@ -15,7 +15,7 @@ Wizcamp is an edtech platform for teenagers (ages 13–17) learning to code.
 **MUST READ before writing any code:**
 1. This file (`Guidelines.md`) — product character, rules, and workflows
 2. `setup.md` — tech stack, dependencies, and configuration
-3. `foundations/` — colors, fonts, typography, utility class reference, and prose system
+3. `foundations/` — colors, fonts, typography, custom spacing, utility class reference, and prose system
 
 **Read on-demand:**
 - `composition/` — read when building page layouts or combining components
