@@ -2,6 +2,10 @@
 
 The structural shell that wraps every admin page. Understanding the full hierarchy is required before building or modifying any admin page.
 
+## Claude mockup
+
+https://claude.ai/share/8df18124-b83e-4932-80bf-49d090c81770
+
 ## Hierarchy
 
 ```
