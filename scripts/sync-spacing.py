@@ -5,7 +5,7 @@ Custom Spacing Sync Pipeline
 Extracts semantic spacing tokens from two Figma design system tables (Desktop
 and Mobile), merges them into a unified token set, and updates:
   - guidelines/foundations/custom-spacing.md
-  - wizcamp-lms/app/globals.css  (@theme inline block)
+  - wizcamp-lms/app/globals.css  (@utility blocks)
 
 Usage:
     python scripts/sync-spacing.py
@@ -44,6 +44,10 @@ FIGMA_API_BASE = "https://api.figma.com/v1"
 # Suffixes stripped before token registration — axis is applied at the utility level.
 STRIP_SUFFIXES = ["-x", "-y"]
 
+# Sentinels that bracket the @utility block in globals.css.
+_UTILITY_BLOCK_START = "/* ─── Custom spacing utilities"
+_UTILITY_BLOCK_END_MARKER = "/* end custom spacing utilities */"
+
 # ==========================================
 # HELPERS (copied from sync-fonts.py — keep in sync)
 # ==========================================
@@ -55,52 +59,7 @@ def walk_tree(node: Dict):
         yield from walk_tree(child)
 
 
-def update_css_block(lines, block_regex, get_var_name_fn, get_new_line_fn, tokens):
-    """Surgically update a CSS block."""
-    start_idx = -1
-    end_idx = -1
 
-    for i, line in enumerate(lines):
-        if re.search(block_regex, line):
-            start_idx = i
-            break
-
-    if start_idx == -1:
-        print(f"⚠️  Warning: Could not find block matching {block_regex}")
-        return lines
-
-    brace_count = 0
-    for i in range(start_idx, len(lines)):
-        brace_count += lines[i].count("{")
-        brace_count -= lines[i].count("}")
-        if brace_count == 0 and "{" in "".join(lines[start_idx : i + 1]):
-            end_idx = i
-            break
-
-    if end_idx == -1:
-        print(f"⚠️  Warning: Could not find closing brace for {block_regex}")
-        return lines
-
-    block_lines = lines[start_idx : end_idx + 1]
-
-    for token in tokens:
-        var_name = get_var_name_fn(token["css_name"])
-        line_pattern = re.compile(r"^\s*" + re.escape(var_name) + r"\s*:")
-        new_line = get_new_line_fn(token)
-
-        match_indices = [j for j, bline in enumerate(block_lines) if line_pattern.match(bline)]
-
-        if match_indices:
-            block_lines[match_indices[0]] = new_line
-            for idx in reversed(match_indices[1:]):
-                block_lines.pop(idx)
-        else:
-            for j in range(len(block_lines) - 1, -1, -1):
-                if "}" in block_lines[j]:
-                    block_lines.insert(j, new_line)
-                    break
-
-    return lines[:start_idx] + block_lines + lines[end_idx + 1 :]
 
 # ==========================================
 # TRANSFORM HELPERS
@@ -202,14 +161,30 @@ def extract_figma_spacing(api_token: str):
 # PHASE 2: TRANSFORM
 # ==========================================
 
+# Maps raw Figma token base names to their CSS property and utility example.
+# The utility example is the most common usage shown in docs.
+# Tokens not listed here fall back to the generic `spacing-{name}` css_name
+# with no css_property (they will be skipped with a warning).
+TOKEN_MAP = {
+    "container-padding": {"css_name": "container-padding", "css_property": "padding-inline", "utility_example": "px-container-padding"},
+    "section-padding":   {"css_name": "section-padding",   "css_property": "padding-block",  "utility_example": "py-section-padding"},
+    "section-title-sm":  {"css_name": "section-title-sm",  "css_property": "gap",             "utility_example": "gap-section-title-sm"},
+    "section-title-md":  {"css_name": "section-title-md",  "css_property": "gap",             "utility_example": "gap-section-title-md"},
+    "section-title-lg":  {"css_name": "section-title-lg",  "css_property": "gap",             "utility_example": "gap-section-title-lg"},
+    "section-title-xl":  {"css_name": "section-title-xl",  "css_property": "gap",             "utility_example": "gap-section-title-xl"},
+}
+
+
 def build_tokens(desktop: Dict[str, int], mobile: Dict[str, int]) -> List[Dict]:
     """
     Merge Desktop and Mobile tables into a unified token list.
 
     - Strip -x / -y axis suffixes from token names.
+    - Rename section-title-gap-* → section-title-* (gap dropped; prefix carries meaning).
     - Deduplicate: if two raw names collapse to the same base name, the first
       encountered wins (Desktop table order is authoritative).
-    - Desktop value is used as the canonical CSS value registered in @theme inline.
+    - Each token resolves its css_name and css_property from TOKEN_MAP.
+      Unknown tokens are skipped with a warning.
     """
     print("🔄 Building unified token list...")
 
@@ -219,17 +194,27 @@ def build_tokens(desktop: Dict[str, int], mobile: Dict[str, int]) -> List[Dict]:
     for raw_name, desktop_px in desktop.items():
         base_name = strip_axis_suffix(raw_name)
 
+        # Rename section-title-gap-* → section-title-*
+        base_name = re.sub(r"^section-title-gap-", "section-title-", base_name)
+
         if base_name in seen:
             print(f"  ⚠️  Duplicate after suffix strip: '{raw_name}' → '{base_name}' (skipped)")
             continue
         seen[base_name] = True
+
+        mapping = TOKEN_MAP.get(base_name)
+        if not mapping:
+            print(f"  ⚠️  Unknown token '{base_name}' — not in TOKEN_MAP, skipped")
+            continue
 
         mobile_px = mobile.get(raw_name)
 
         tokens.append({
             "raw_name": raw_name,
             "base_name": base_name,
-            "css_name": f"spacing-{base_name}",
+            "css_name": mapping["css_name"],
+            "css_property": mapping["css_property"],
+            "utility_example": mapping["utility_example"],
             "desktop_px": desktop_px,
             "desktop_rem": px_to_rem(desktop_px),
             "mobile_px": mobile_px,
@@ -253,7 +238,7 @@ def write_spacing_md(tokens: List[Dict]) -> None:
         "",
         "Auto-generated by `sync-spacing.py`. Do not edit manually.",
         "",
-        "| Token | CSS variable | Desktop (px → rem) | Mobile (px → rem) |",
+        "| Token | Utility class | Desktop (px → rem) | Mobile (px → rem) |",
         "| :--- | :--- | :--- | :--- |",
     ]
 
@@ -264,7 +249,7 @@ def write_spacing_md(tokens: List[Dict]) -> None:
             else "—"
         )
         lines.append(
-            f"| `{t['base_name']}` | `--{t['css_name']}` "
+            f"| `{t['base_name']}` | `{t['utility_example']}` "
             f"| {t['desktop_px']}px → {t['desktop_rem']} "
             f"| {mobile_col} |"
         )
@@ -273,38 +258,38 @@ def write_spacing_md(tokens: List[Dict]) -> None:
     SPACING_MD_PATH.write_text("\n".join(lines) + "\n")
     print(f"✅ Wrote custom-spacing.md ({len(tokens)} tokens)")
 
-# Sentinel comment that brackets the mobile override block in globals.css.
-_MOBILE_BLOCK_START = "/* ─── Custom spacing — mobile overrides"
-_MOBILE_BLOCK_END_MARKER = "/* end custom spacing mobile overrides */"
-
 
 # ==========================================
 # PHASE 4: UPDATE globals.css
 # ==========================================
 
-def _build_mobile_override_block(tokens: List[Dict]) -> str:
-    """Render the @media mobile override block for tokens where desktop ≠ mobile."""
-    differing = [t for t in tokens if t["mobile_rem"] is not None and t["mobile_rem"] != t["desktop_rem"]]
-    if not differing:
-        return ""
+def _build_utility_block(tokens: List[Dict]) -> str:
+    """
+    Render @utility blocks for all tokens.
 
-    inner = "\n".join(f"    --{t['css_name']}: {t['mobile_rem']};" for t in differing)
-    return (
-        "/* ─── Custom spacing — mobile overrides ──────────────────────────────────────────\n"
-        "   Tailwind v4 resolves --spacing-* utilities via var() at render time, so\n"
-        "   overriding the custom properties on :root inside a @media block is\n"
-        "   sufficient — no extra utility classes needed in markup. @theme cannot be\n"
-        "   nested inside @media in Tailwind v4. Threshold matches Tailwind's built-in\n"
-        "   `sm` breakpoint (640px) — the same point the codebase already uses for\n"
-        "   gutter changes (sm:px-6, sm:px-8). Only tokens that differ between Desktop\n"
-        "   and Mobile are listed. */\n"
-        "@media (max-width: 639px) {\n"
-        "  :root {\n"
-        f"{inner}\n"
-        "  }\n"
-        "}\n"
-        f"{_MOBILE_BLOCK_END_MARKER}"
-    )
+    Each utility embeds a @media (max-width: 639px) override when the mobile
+    value differs from desktop. The utility name is the token's css_name so
+    Tailwind resolves e.g. `gap-section-title-xl`, `px-container-padding`, etc.
+    """
+    lines = [
+        "/* ─── Custom spacing utilities ───────────────────────────────────────────────────",
+        "   Auto-generated by sync-spacing.py. Do not edit manually.",
+        "   Each @utility embeds its own mobile override so the responsive behaviour",
+        "   is self-contained. Threshold matches Tailwind's `sm` breakpoint (640px). */",
+    ]
+
+    for t in tokens:
+        prop = t["css_property"]
+        lines.append(f"@utility {t['css_name']} {{")
+        lines.append(f"  {prop}: {t['desktop_rem']};")
+        if t["mobile_rem"] is not None and t["mobile_rem"] != t["desktop_rem"]:
+            lines.append("  @media (max-width: 639px) {")
+            lines.append(f"    {prop}: {t['mobile_rem']};")
+            lines.append("  }")
+        lines.append("}")
+
+    lines.append(_UTILITY_BLOCK_END_MARKER)
+    return "\n".join(lines)
 
 
 def update_globals_css(tokens: List[Dict]) -> None:
@@ -315,41 +300,30 @@ def update_globals_css(tokens: List[Dict]) -> None:
         sys.exit(1)
 
     content = GLOBALS_CSS_PATH.read_text()
-    lines = content.split("\n")
 
-    # 1. Upsert desktop values into @theme inline
-    lines = update_css_block(
-        lines=lines,
-        block_regex=r"^@theme\s+inline\s*\{",
-        get_var_name_fn=lambda css_name: f"--{css_name}",
-        get_new_line_fn=lambda t: f"  --{t['css_name']}: {t['desktop_rem']};",
-        tokens=tokens,
-    )
+    new_block = _build_utility_block(tokens)
 
-    # 2. Replace existing mobile override block, or insert one after @theme inline
-    new_block = _build_mobile_override_block(tokens)
-    joined = "\n".join(lines)
-
-    # Remove any existing block (between sentinel comment and end marker)
+    # Replace existing block (between sentinel and end marker), or insert after @theme inline.
     existing_pattern = re.compile(
-        r"\n/\* ─── Custom spacing — mobile overrides.*?" + re.escape(_MOBILE_BLOCK_END_MARKER),
+        r"/\* ─── Custom spacing utilities.*?" + re.escape(_UTILITY_BLOCK_END_MARKER),
         re.DOTALL,
     )
-    joined = existing_pattern.sub("", joined)
 
-    if new_block:
-        # Insert after the closing brace of @theme inline
-        joined = re.sub(
-            r"(^@theme\s+inline\s*\{[^}]*\})",
+    if existing_pattern.search(content):
+        content = existing_pattern.sub(new_block, content)
+    else:
+        # First run: insert after the closing brace of @theme inline
+        content = re.sub(
+            r"(^@theme\s+inline\s*\{.*?^\})",
             lambda m: m.group(0) + "\n\n" + new_block,
-            joined,
+            content,
             count=1,
             flags=re.MULTILINE | re.DOTALL,
         )
 
-    GLOBALS_CSS_PATH.write_text(joined)
+    GLOBALS_CSS_PATH.write_text(content)
     mobile_count = len([t for t in tokens if t["mobile_rem"] is not None and t["mobile_rem"] != t["desktop_rem"]])
-    print(f"✅ Updated globals.css ({len(tokens)} desktop tokens, {mobile_count} mobile overrides)")
+    print(f"✅ Updated globals.css ({len(tokens)} @utility blocks, {mobile_count} with mobile overrides)")
 
 # ==========================================
 # MAIN
