@@ -292,17 +292,27 @@ def update_globals_css(tokens: List[Dict[str, any]]) -> None:
     content = GLOBALS_CSS_PATH.read_text()
     lines = content.split('\n')
     
-    def update_css_block(lines, block_regex, get_var_name_fn, get_new_line_fn, tokens):
+    def update_css_block(lines, block_regex, get_var_name_fn, get_new_line_fn, tokens, anchor_regex=None):
         """Surgically update a CSS block."""
         start_idx = -1
         end_idx = -1
-        
-        # Find block start
-        for i, line in enumerate(lines):
-            if re.search(block_regex, line):
+
+        search_from = 0
+        if anchor_regex:
+            for i, line in enumerate(lines):
+                if re.search(anchor_regex, line):
+                    search_from = i
+                    break
+            if search_from == 0:
+                print(f"⚠️  Warning: Could not find anchor matching {anchor_regex}")
+                return lines
+
+        # Find block start (after anchor if given)
+        for i in range(search_from, len(lines)):
+            if re.search(block_regex, lines[i]):
                 start_idx = i
                 break
-        
+
         if start_idx == -1:
             print(f"⚠️  Warning: Could not find block matching {block_regex}")
             return lines
@@ -345,15 +355,16 @@ def update_globals_css(tokens: List[Dict[str, any]]) -> None:
         
         return lines[:start_idx] + block_lines + lines[end_idx+1:]
     
-    # Update :root
+    # Update :root (main theme block — anchored after spacing utilities)
     lines = update_css_block(
         lines=lines,
         block_regex=r'^:root\s*\{',
         get_var_name_fn=lambda name: f"--{name}",
         get_new_line_fn=lambda t: f"  --{t['name']}: {t['light_oklch']};",
-        tokens=tokens
+        tokens=tokens,
+        anchor_regex=r'/\*\s*end custom spacing utilities\s*\*/'
     )
-    
+
     # Update .dark
     lines = update_css_block(
         lines=lines,
@@ -362,7 +373,7 @@ def update_globals_css(tokens: List[Dict[str, any]]) -> None:
         get_new_line_fn=lambda t: f"  --{t['name']}: {t['dark_oklch']};",
         tokens=tokens
     )
-    
+
     # Update @theme inline
     lines = update_css_block(
         lines=lines,
