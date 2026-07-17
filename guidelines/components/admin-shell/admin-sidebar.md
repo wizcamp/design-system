@@ -1,35 +1,28 @@
 # AdminSidebar
 
-The primary navigation shell for the admin portal. Renders a full-height sidebar with contextual cohort context, main nav, dev tools, external links, and a user identity footer.
+The primary navigation shell for the admin portal. Renders a full-height sidebar with main nav, dev tools, external links, and a settings footer link.
 
 ## Hierarchy
 
 ```
-AdminLayout                          ← app/(authenticated)/(admin)/layout.tsx
-  └── SidebarProvider                ← shadcn/ui — manages expand/collapse state + CSS vars
-        ├── AdminSidebar             ← components/admin/AdminSidebar.tsx
-        │     ├── SidebarHeader      ← shadcn/ui primitive
-        │     ├── SidebarContent     ← shadcn/ui primitive
-        │     │     ├── CohortContextGroup   ← file-private — conditional, cohort deep-view only
+AdminLayout
+  └── SidebarProvider
+        ├── AdminSidebar                 ← components/admin/AdminSidebar.tsx
+        │     ├── SidebarHeader          ← shadcn/ui primitive
+        │     ├── SidebarContent         ← shadcn/ui primitive
         │     │     ├── SidebarGroup (Main Navigation)
-        │     │     ├── SidebarGroup (Dev Tools)
+        │     │     ├── SidebarGroup (Dev Tools)   ← dev only
         │     │     └── SidebarGroup (External Tools)
-        │     └── SidebarFooter      ← shadcn/ui primitive
-        │           ├── SidebarMenu  ← Settings link
-        │           └── UserNavFooter ← file-private — avatar, theme toggle, sign-out
-        └── SidebarInset             ← shadcn/ui — the scrollable main content <main>
-              ├── AdminPageHeader    ← components/admin/AdminPageHeader.tsx — on every page
-              └── AdminPageContent   ← components/admin/AdminPageContent.tsx — on every page
-                    └── {page content}
+        │     └── SidebarFooter          ← shadcn/ui primitive
+        │           └── SidebarMenu      ← Settings link
+        └── SidebarInset
 ```
 
 ## Contains
 
 - `Sidebar` primitives (`SidebarHeader`, `SidebarContent`, `SidebarFooter`, `SidebarGroup`, `SidebarGroupLabel`, `SidebarGroupContent`, `SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton`) — shadcn/ui, no separate doc
-- `Avatar` — shadcn/ui primitive, no separate doc
-- `ThemeToggle` — custom component, see `components/theme-toggle.md`
-- `CohortContextGroup` — file-private sub-component, see below
-- `UserNavFooter` — file-private sub-component, see below
+- `Icon` — `components/ui/icon` wrapper, enforces `strokeWidth={1.75}` and `shrink-0`
+- Nav item arrays sourced from `lib/admin-routes.ts` (`navItems`) and file-local constants (`devItems`, `externalItems`)
 
 ## Structure
 
@@ -37,112 +30,66 @@ AdminLayout                          ← app/(authenticated)/(admin)/layout.tsx
    - Title — "Wizcamp Admin" — `text-base font-bold leading-tight`
    - Subtitle — "Camp Manager" — `text-xs text-muted-foreground mt-0.5`
 
-2. **Contextual nav** — `<CohortContextGroup>` (conditional — rendered only when inside a cohort deep-view)
-   - Wrapped in `SidebarGroup > SidebarGroupLabel + SidebarGroupContent`
-   - Label — "Current Context"
-   - Cohort link — `flex items-center gap-3 rounded-lg px-3 py-2.5 bg-primary/10 text-primary`
-     - Icon — `<Calendar />` — `size-4 shrink-0`
-     - Camp name — `text-xs text-muted-foreground`
-     - Cohort name — `text-sm font-medium truncate`
-
-3. **Main Navigation** — `SidebarGroup > SidebarGroupLabel + SidebarGroupContent > SidebarMenu`
+2. **Main Navigation** — `SidebarGroup > SidebarGroupLabel + SidebarGroupContent > SidebarMenu`
    - Label — "Main Navigation"
-   - Items: Cohorts, Meetings, Enrollments, Students
-   - Each: `<SidebarMenuButton>` with `isActive` + icon (`size-4`) + label
+   - Items sourced from `navItems` in `lib/admin-routes.ts`: Cohorts, Meetings, Enrollments, Students
+   - Each: `<SidebarMenuButton>` with `isActive` + `<Icon>` (`size={16}`) + label
+   - Active check: `pathname === href || pathname.startsWith(href + '/')`
+   - `render={<Link href={href} />}` — uses base-ui render prop pattern
 
-4. **Dev Tools** — `SidebarGroup > SidebarGroupLabel + SidebarGroupContent > SidebarMenu` (remove before production)
+3. **Dev Tools** — `SidebarGroup` (rendered only when `process.env.NODE_ENV !== 'production'`)
    - Label — "Dev Tools"
-   - Items: Code Theme, Icon Comparison
+   - Items (file-local `devItems`): Code Theme, Icon Catalog, Spacing
+   - Active check: `pathname === href` (exact match only)
 
-5. **External Tools** — `SidebarGroup > SidebarGroupLabel + SidebarGroupContent > SidebarMenu`
+4. **External Tools** — `SidebarGroup > SidebarGroupLabel + SidebarGroupContent > SidebarMenu`
    - Label — "External Tools"
-   - Items: Square Developer, Zoom, wizcamp.io, GitHub
-   - Each opens in a new tab via `<a target="_blank" rel="noreferrer">`
+   - Items (file-local `externalItems`): Square Developer, Zoom, wizcamp.io, GitHub
+   - Each: `render={<a href={href} target="_blank" rel="noreferrer" />}` — no `isActive`
 
-6. **Footer** — `border-t px-3 py-3`
+5. **Footer** — `border-t px-3 py-3`
    - Settings nav item — `<SidebarMenuButton>` linking to `/admin/settings`
-   - `<UserNavFooter>` — see below
+   - Active check: `pathname.startsWith('/admin/settings')`
+   - Note: Settings link is a placeholder pending `AccountPanel` migration to the sidebar footer; remove when confirmed redundant
 
-## Local sub-components
+## Nav item arrays
 
-These are file-private (unexported). They receive all data as props — no hooks inside.
-
-### `CohortContextGroup`
-
-| Prop | Type | Description |
-|---|---|---|
-| `cohortSlug` | `string` | Slug parsed from the current pathname |
-| `currentCohort` | `Cohort \| undefined` | Matched cohort from the query result |
-
-Renders a `SidebarGroup` with a single cohort context link. Rendered conditionally by `AdminSidebar` when `cohortSlug` is non-null.
-
-### `UserNavFooter`
-
-| Prop | Type | Description |
-|---|---|---|
-| `user` | `ReturnType<typeof useAuth>['user']` | Authenticated user object |
-| `signOut` | `ReturnType<typeof useAuth>['signOut']` | Sign-out handler |
-| `updateSettings` | `UseMutationResult` | Passed through to `ThemeToggle` |
-
-Renders the avatar, name, email, theme toggle, and sign-out button row in the sidebar footer.
+`navItems` lives in `lib/admin-routes.ts` — shared with `AdminHeader` for breadcrumb derivation. `devItems` and `externalItems` are file-local constants at the top of `AdminSidebar.tsx`.
 
 ## Icon usage
 
-**Current (lucide-react — migration pending):**
+All icons imported from `@/lib/icons` (the lucide-react shim). Rendered via `<Icon icon={X} size={16} />`.
 
-| Location | Import | Size |
+| Location | Icon | Size |
 |---|---|---|
-| Cohorts nav | `Calendar` | `size-4` |
-| Meetings nav | `CalendarDays` | `size-4` |
-| Enrollments nav | `Users` | `size-4` |
-| Students nav | `GraduationCap` | `size-4` |
-| Dev — Code Theme | `Palette` | `size-4` |
-| Dev — Icon Comparison | `SwatchBook` | `size-4` |
-| External — Square | `ExternalLink` | `size-4` |
-| External — Zoom | `Video` | `size-4` |
-| External — wizcamp.io | `Globe` | `size-4` |
-| External — GitHub | `Github` | `size-4` |
-| Settings footer | `Settings` | `size-4` |
-| Sign-out button | `LogOut` | `size-4` |
-
-**Target (@tabler/icons-react):**
-
-| Location | Import | Size |
-|---|---|---|
-| Cohorts nav | `IconCalendar` | `size-4` |
-| Meetings nav | `IconCalendar` | `size-4` |
-| Enrollments nav | `IconUsers` | `size-4` |
-| Students nav | `IconSchool` | `size-4` |
-| Dev — Code Theme | `IconPalette` | `size-4` |
-| Dev — Icon Comparison | `IconSwatch` | `size-4` |
-| External — Square | `IconExternalLink` | `size-4` |
-| External — Zoom | `IconVideo` | `size-4` |
-| External — wizcamp.io | `IconGlobe` | `size-4` |
-| External — GitHub | `IconBrandGithub` | `size-4` |
-| Settings footer | `IconSettings` | `size-4` |
-| Sign-out button | `IconLogout` | `size-4` |
+| Cohorts nav | `Calendar` | `size={16}` |
+| Meetings nav | `CalendarDays` | `size={16}` |
+| Enrollments nav | `Users` | `size={16}` |
+| Students nav | `School` | `size={16}` |
+| Dev — Code Theme | `Palette` | `size={16}` |
+| Dev — Icon Catalog | `SwatchBook` | `size={16}` |
+| Dev — Spacing | `Ruler` | `size={16}` |
+| External — Square | `ExternalLink` | `size={16}` |
+| External — Zoom | `Video` | `size={16}` |
+| External — wizcamp.io | `Globe` | `size={16}` |
+| External — GitHub | `Github` | `size={16}` |
+| Settings footer | `Settings` | `size={16}` |
 
 ## Props
 
-`AdminSidebar` takes no props. All data is sourced internally via hooks and passed down to local sub-components.
+`AdminSidebar` takes no props. All data is sourced from `usePathname()` and the file-local item arrays.
 
-| Hook | Provides |
-|---|---|
-| `useAuth()` | `user`, `signOut` |
-| `useAdminCohortsQuery()` | cohort list for contextual nav |
-| `useUpdateAdminSettingsMutation()` | passed to `UserNavFooter` → `ThemeToggle` |
+## What was removed
 
-## Variants
-
-None. Single variant only.
+- `CohortContextGroup` — file-private sub-component for cohort deep-view context. Removed; `ScopeCard` is the planned replacement (not yet built — see `scopecard-accountpanel-plan.md`).
+- `UserNavFooter` — file-private sub-component for avatar, theme toggle, and sign-out. Removed; `AccountPanel` now lives in `AdminHeader` instead of the sidebar footer.
+- `useAuth()`, `useAdminCohortsQuery()`, `useUpdateAdminSettingsMutation()` — all hooks removed from this component. `AdminSidebar` now only calls `usePathname()`.
 
 ## Rules
 
 - Mount once in the admin layout — never inside a page component
-- Nav items are defined in `navItems`, `devItems`, and `externalItems` arrays at the top of the file — do not add items inline in JSX
-- All nav icons use `size-4` — do not change this
-- The user footer always includes `ThemeToggle` and sign-out — do not remove either
-- Dev Tools section must be removed before production
+- Nav items are defined in `navItems` (from `lib/admin-routes.ts`), `devItems`, and `externalItems` — do not add items inline in JSX
+- All nav icons use `size={16}` via `<Icon>` — do not use raw icon JSX
+- Dev Tools section is gated by `process.env.NODE_ENV !== 'production'` — do not remove the guard
 - Do not add a border or shadow to the sidebar itself — surface color provides the separation
-- `CohortContextGroup` and `UserNavFooter` are file-private — do not export them or move them to separate files
-- All hooks are called in `AdminSidebar` only — local sub-components receive data as props
+- `AdminSidebar` calls no hooks other than `usePathname()` — all data is static or derived from the pathname
