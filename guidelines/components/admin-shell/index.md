@@ -24,7 +24,7 @@ AdminLayout                          ← app/(authenticated)/(admin)/layout.tsx
 | `AdminUserProvider` | [admin-user-provider.md](../providers/admin-user-provider.md) | RSC-to-client user bridge; 401 handler; theme sync |
 | `BreadcrumbProvider` | [breadcrumb-provider.md](../providers/breadcrumb-provider.md) | Dynamic breadcrumb tail context |
 | `AdminSidebar` | [admin-sidebar.md](admin-sidebar.md) | Full-height nav sidebar — mounted once in `AdminLayout` |
-| `AdminHeader` | [admin-page-header.md](admin-page-header.md) | `h-16` top bar with `SidebarTrigger`, breadcrumbs, and `AccountPanel` |
+| `AdminHeader` | [admin-header.md](admin-header.md) | `h-16` top bar with `SidebarTrigger`, breadcrumbs, and `AccountPanel` |
 | `AccountPanel` | [account-panel.md](account-panel.md) | Thin adapter in the header — delegates to `AccountMenu` |
 
 ## Shell contract
