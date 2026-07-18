@@ -14,7 +14,6 @@ Environment:
 
 import os
 import sys
-import json
 import re
 import math
 import requests
@@ -97,38 +96,35 @@ def hex_to_oklch(hex_color: str, opacity: Optional[float] = None) -> str:
         opacity: Optional opacity value (0-1 range)
     
     Returns:
-        OKLCH string (e.g., "oklch(0.7686 0.1647 70.0804)" or "oklch(0.7686 0.1647 70.0804 / 80%)")
+        OKLCH string (e.g., "oklch(0.7686 0.1647 70.0804)" or "oklch(0.7686 0.1647 70.0804 / 20%)")
     """
     r, g, b = parse_color(hex_color)
     l, c, h = rgb_to_oklch(r, g, b)
     
-    base = f"oklch({format_number(l)} {format_number(c)} {format_number(h)})"
-    
     if opacity is not None and opacity < 1.0:
-        # Convert to percentage and format
         opacity_pct = round(opacity * 100)
-        return f"{base} / {opacity_pct}%"
+        return f"oklch({format_number(l)} {format_number(c)} {format_number(h)} / {opacity_pct}%)"
     
-    return base
+    return f"oklch({format_number(l)} {format_number(c)} {format_number(h)})"
 
-def rgb_obj_to_hex(color_obj: Dict) -> Tuple[str, Optional[float]]:
+def rgb_obj_to_hex(color_obj: Dict, fill_opacity: Optional[float] = None) -> Tuple[str, Optional[float]]:
     """
     Convert Figma RGB object to hex string and extract opacity.
-    
-    Args:
-        color_obj: Figma color object with r, g, b, a fields (0-1 range)
-    
-    Returns:
-        Tuple of (hex_string, opacity) where opacity is None if fully opaque
+
+    Figma stores fill-level opacity in fills[0]['opacity'] (separate from
+    color['a'], which is always 1.0 for variable-bound fills). fill_opacity
+    takes precedence when provided.
     """
-    r = int(color_obj['r'] * 255)
-    g = int(color_obj['g'] * 255)
-    b = int(color_obj['b'] * 255)
-    a = color_obj.get('a', 1.0)
-    
+    r = round(color_obj['r'] * 255)
+    g = round(color_obj['g'] * 255)
+    b = round(color_obj['b'] * 255)
+
+    # Prefer fill-level opacity; fall back to color alpha
+    a = fill_opacity if fill_opacity is not None else color_obj.get('a', 1.0)
+
     hex_color = f"#{r:02x}{g:02x}{b:02x}"
-    opacity = a if a < 1.0 else None
-    
+    opacity = a if a < 0.9999 else None
+
     return hex_color, opacity
 
 # ==========================================
@@ -182,22 +178,26 @@ def extract_figma_tokens(api_token: str) -> List[Dict[str, any]]:
                 break
         
         # Extract light color from second cell
-        light_rgb = None
+        light_fill = None
         for node in walk_tree(cells[1]):
             if node.get('type') == 'RECTANGLE' and node.get('fills'):
-                light_rgb = node['fills'][0]['color']
+                light_fill = node['fills'][0]
                 break
-        
+
         # Extract dark color from third cell
-        dark_rgb = None
+        dark_fill = None
         for node in walk_tree(cells[2]):
             if node.get('type') == 'RECTANGLE' and node.get('fills'):
-                dark_rgb = node['fills'][0]['color']
+                dark_fill = node['fills'][0]
                 break
-        
-        if var_name and light_rgb and dark_rgb:
-            light_hex, light_opacity = rgb_obj_to_hex(light_rgb)
-            dark_hex, dark_opacity = rgb_obj_to_hex(dark_rgb)
+
+        if var_name and light_fill and dark_fill:
+            light_hex, light_opacity = rgb_obj_to_hex(
+                light_fill['color'], light_fill.get('opacity')
+            )
+            dark_hex, dark_opacity = rgb_obj_to_hex(
+                dark_fill['color'], dark_fill.get('opacity')
+            )
             
             token = {
                 'name': var_name,
